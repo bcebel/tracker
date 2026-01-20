@@ -1,24 +1,35 @@
 import { Server } from "bittorrent-tracker";
+import http from "http";
 
 const server = new Server({
   udp: false,
-  http: true, // Enable HTTP so Heroku's health check passes
+  http: true, // Required for Heroku health checks
   ws: true,
   stats: true,
 });
 
-const port = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8000;
+const APP_URL = "https://tracker-0ad4cca9fd92.herokuapp.com";
 
-// CRITICAL: Listen on '0.0.0.0', not 'localhost'
-server.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Neighborhood Tracker is LIVE`);
-  console.log(`Listening on port: ${port}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Neighborhood Tracker is LIVE on port ${PORT}`);
+
+  // Keep-Alive: Ping itself every 20 minutes
+  setInterval(
+    () => {
+      console.log("⚓ Keeping tracker awake...");
+      http
+        .get(APP_URL, (res) => {
+          console.log(`Response: ${res.statusCode}`);
+        })
+        .on("error", (err) => {
+          console.error("Keep-alive failed:", err.message);
+        });
+    },
+    1000 * 60 * 20,
+  ); // 20 minutes
 });
 
+// Standard logging
 server.on("error", (err) => console.error("Error:", err.message));
-server.on("warning", (err) => console.warn("Warning:", err.message));
-
-// Optional: Log when neighbors connect
-server.on("start", (peer) => {
-  console.log("Peer joined swarm:", peer.infoHash);
-});
+server.on("start", (peer) => console.log("Peer joined:", peer.infoHash));
