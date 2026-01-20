@@ -1,30 +1,24 @@
-// tracker.js
 import { Server } from "bittorrent-tracker";
 
 const server = new Server({
-  udp: false, // Browsers can't use UDP
-  http: false, // Browsers can't use HTTP trackers easily
-  ws: true, // THIS is the only one that matters for WebTorrent
-  stats: true, // Keep this so you can see if it's working
-  // REMOVED: the 'filter' function so ALL your neighborhood torrents are allowed
+  udp: false,
+  http: true, // Enable HTTP so Heroku's health check passes
+  ws: true,
+  stats: true,
 });
 
-server.on("error", (err) => console.log("❌ Tracker Error:", err.message));
-server.on("warning", (err) => console.log("⚠️ Tracker Warning:", err.message));
+const port = process.env.PORT || 8000;
 
-server.on("listening", () => {
-  const wsAddr = server.ws.address();
-  console.log(
-    `🚀 Neighborhood WebSocket Tracker: ws://localhost:${wsAddr.port}`,
-  );
+// CRITICAL: Listen on '0.0.0.0', not 'localhost'
+server.listen(port, "0.0.0.0", () => {
+  console.log(`🚀 Neighborhood Tracker is LIVE`);
+  console.log(`Listening on port: ${port}`);
 });
 
-// STARTING THE SERVER
-// Use a fixed port (like 8000) so you don't have to change your app code every time
-const port = 8000;
-server.listen(port, "0.0.0.0");
+server.on("error", (err) => console.error("Error:", err.message));
+server.on("warning", (err) => console.warn("Warning:", err.message));
 
-// Simple logging to see neighbors connecting
-server.on("start", (addr) => {
-  console.log("✨ Neighbor joined swarm:", addr);
+// Optional: Log when neighbors connect
+server.on("start", (peer) => {
+  console.log("Peer joined swarm:", peer.infoHash);
 });
