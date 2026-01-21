@@ -9,6 +9,29 @@ const server = new Server({
 });
 
 const PORT = process.env.PORT || 8000;
+const httpServer = http.createServer((req, res) => {
+  // HEROKU HEALTH CHECK & BROWSER PING
+  if (req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Neighborhood Tracker is Running");
+    return;
+  }
+
+  // STATS CHECK (Optional: visit /stats in browser)
+  if (req.url === "/stats") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(server.stats()));
+    return;
+  }
+});
+
+// Pass the http server to the tracker
+server.http = httpServer;
+
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Neighborhood Tracker is LIVE on port ${PORT}`);
+});
+
 const APP_URL = "https://tracker-0ad4cca9fd92.herokuapp.com";
 
 server.listen(PORT, "0.0.0.0", () => {
