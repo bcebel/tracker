@@ -5,15 +5,13 @@ const PORT = process.env.PORT || 8000;
 const APP_URL = "https://tracker-0ad4cca9fd92.herokuapp.com";
 
 const server = new Server({
-  udp: false, // Heroku doesn't support UDP
+  udp: false,
   http: true,
   ws: true,
   stats: true,
 });
 
-// 1. Create a single HTTP server to handle everything
 const httpServer = http.createServer((req, res) => {
-  // Handle Health Check & Stats
   if (req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("Neighborhood Tracker is Running");
@@ -21,12 +19,12 @@ const httpServer = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(server.stats()));
   } else {
-    // Let the tracker handle other HTTP requests (like /announce)
+    // Correct way to pass requests to the tracker
     server.onHttpRequest(req, res);
   }
 });
 
-// 2. IMPORTANT: Manually handle the WebSocket upgrade for Heroku
+// Handle the WebSocket upgrade for Heroku
 httpServer.on("upgrade", (req, socket, head) => {
   if (server.ws) {
     server.ws.handleUpgrade(req, socket, head, (ws) => {
@@ -35,17 +33,18 @@ httpServer.on("upgrade", (req, socket, head) => {
   }
 });
 
-// 3. Attach and Listen (Only call listen once!)
+// Fix: Use backticks for the template literal here
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Neighborhood Tracker is LIVE on port ${PORT}`);
 });
 
-// 4. Keep-Alive: Ping itself every 20 minutes
+// Keep-Alive Ping
 setInterval(
   () => {
     console.log("⚓ Keeping tracker awake...");
     http
       .get(APP_URL, (res) => {
+        // Fix: Use backticks for the template literal here
         console.log(`Keep-alive status: ${res.statusCode}`);
       })
       .on("error", (err) => {
@@ -55,6 +54,5 @@ setInterval(
   1000 * 60 * 20,
 );
 
-// Error Handling
 server.on("error", (err) => console.error("Tracker Error:", err.message));
 server.on("start", (peer) => console.log("Peer joined:", peer.infoHash));
